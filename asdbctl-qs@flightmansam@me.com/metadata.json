@@ -1,0 +1,8 @@
+{
+  "name": "Studio Display Brightness Slider",
+  "description": "A small Quick Settings slider to control the Apple Studio Display (when connected)",
+  "uuid": "asdbctl-qs@flightmansam@me.com",
+  "shell-version": [
+    "46"
+  ]
+}

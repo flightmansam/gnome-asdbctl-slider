@@ -1,0 +1,83 @@
+/* extension.js
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+import GObject from 'gi://GObject';
+import GLib from 'gi://GLib'
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {QuickSlider, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+
+const BrightnessSlider = GObject.registerClass(
+    class BrightnessSlider extends QuickSlider {
+        _init(extensionObject) {
+            super._init({
+                iconName: 'video-display-symbolic',
+            });
+    
+            // Watch for changes and set an accessible name for the slider
+            this._sliderChangedId = this.slider.connect('notify::value',
+                this._onSliderChanged.bind(this));
+            this.slider.accessible_name = _('Studio Display Brightness Slider');
+
+            setInterval(() => {
+                this._shouldIHide();
+            }, 15000);
+        }
+
+        _shouldIHide() {
+            let connected = this._isDisplayConnected()
+            this.visible = connected
+        }
+
+        _isDisplayConnected() {
+            let [res, out] = GLib.spawn_command_line_sync('asdbctl get');
+            return (out[0] != 78) // 0x78 is E in Error (yes I am lazy af) I'm not even going to sync the display brightness
+        }
+    
+        _onSliderChanged() {
+            // Assuming our GSettings holds values between 0..100, adjust for the
+            // slider taking values between 0..1
+            const percent = Math.floor(this.slider.value * 100);
+            GLib.spawn_command_line_async('asdbctl set '+percent)
+        }
+    });
+
+const Indicator = GObject.registerClass(
+class Indicator extends SystemIndicator {
+    constructor() {
+        super();
+
+        this._indicator = this._addIndicator();
+        const slider = new BrightnessSlider();
+        this.quickSettingsItems.push(slider);
+    }
+});
+
+export default class QuickSettingsDisplayBrightness extends Extension {
+    enable() {
+        this._indicator = new Indicator();
+        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator, 2);
+    }
+
+    disable() {
+        this._indicator.quickSettingsItems.forEach(item => item.destroy());
+        this._indicator.destroy();
+    }
+}
+
