@@ -41,8 +41,7 @@ const BrightnessSlider = GObject.registerClass(
         }
 
         _shouldIHide() {
-            let connected = this._isDisplayConnected()
-            this.visible = connected
+            this.visible = this._isDisplayConnected()
         }
 
         _isDisplayConnected() {
@@ -51,7 +50,7 @@ const BrightnessSlider = GObject.registerClass(
         }
     
         _onSliderChanged() {
-            // Assuming our GSettings holds values between 0..100, adjust for the
+            // Assuming values between 0..100, adjust for the
             // slider taking values between 0..1
             const percent = Math.floor(this.slider.value * 100);
             GLib.spawn_command_line_async('asdbctl set '+percent)
