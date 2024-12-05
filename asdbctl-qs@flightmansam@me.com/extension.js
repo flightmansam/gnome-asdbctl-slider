@@ -41,12 +41,17 @@ const BrightnessSlider = GObject.registerClass(
         }
 
         _shouldIHide() {
-            this.visible = this._isDisplayConnected()
+            const brightness = this._brightness()
+            this.visible = (brightness != null)
+            const percent = Math.floor(this.slider.value * 100);
+            if (percent != brightness) this.slider.value = brightness / 100
         }
 
-        _isDisplayConnected() {
+        _brightness() {
             let [res, out] = GLib.spawn_command_line_sync('asdbctl get');
-            return (out[0] != 78) // 0x78 is E in Error (yes I am lazy af) I'm not even going to sync the display brightness
+            out = out.toString().trim().split(" ");
+            if (out[0] != "brightness") return null
+            return out[1]
         }
     
         _onSliderChanged() {
