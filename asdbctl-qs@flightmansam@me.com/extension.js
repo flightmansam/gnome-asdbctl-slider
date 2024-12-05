@@ -38,6 +38,8 @@ const BrightnessSlider = GObject.registerClass(
             setInterval(() => {
                 this._shouldIHide();
             }, 15000);
+
+            this._shouldIHide();
         }
 
         _shouldIHide() {
