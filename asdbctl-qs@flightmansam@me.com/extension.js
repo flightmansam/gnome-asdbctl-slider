@@ -88,7 +88,7 @@ function addExternalIndicatorAtTop(indicator, colSpan = 1) {
     let sibling = Main.panel.statusArea.quickSettings._brightness ?? null;
     Main.panel.statusArea.quickSettings._indicators.insert_child_below(indicator, sibling);
 
-    // Insert before background apps if it exists
+    // Insert before network indicators
     sibling = Main.panel.statusArea.quickSettings._network?.quickSettingsItems?.at(0) ?? null;
     Main.panel.statusArea.quickSettings._addItemsBefore(indicator.quickSettingsItems, sibling, colSpan);
 
