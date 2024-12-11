@@ -75,10 +75,31 @@ class Indicator extends SystemIndicator {
     }
 });
 
+
+ /**
+     * Insert indicator and quick settings items at
+     * appropriate positions
+     *
+     * @param {PanelMenu.Button} indicator
+     * @param {number=} colSpan
+     */
+function addExternalIndicatorAtTop(indicator, colSpan = 1) {
+    // Insert before first non-privacy indicator if it exists
+    let sibling = Main.panel.statusArea.quickSettings._brightness ?? null;
+    Main.panel.statusArea.quickSettings._indicators.insert_child_below(indicator, sibling);
+
+    // Insert before background apps if it exists
+    sibling = Main.panel.statusArea.quickSettings._network?.quickSettingsItems?.at(0) ?? null;
+    Main.panel.statusArea.quickSettings._addItemsBefore(indicator.quickSettingsItems, sibling, colSpan);
+
+}
+
+
 export default class QuickSettingsDisplayBrightness extends Extension {
     enable() {
         this._indicator = new Indicator();
-        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator, 2);
+        addExternalIndicatorAtTop(this._indicator, 2);
+
     }
 
     disable() {
