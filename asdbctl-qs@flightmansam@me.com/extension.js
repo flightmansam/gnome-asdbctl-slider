@@ -17,6 +17,7 @@
  */
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib'
+import Gio from 'gi://Gio'
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -25,6 +26,7 @@ import {QuickSlider, SystemIndicator} from 'resource:///org/gnome/shell/ui/quick
 
 const BrightnessSlider = GObject.registerClass(
     class BrightnessSlider extends QuickSlider {
+
         _init(extensionObject) {
             super._init({
                 iconName: 'video-display-symbolic',
@@ -36,24 +38,25 @@ const BrightnessSlider = GObject.registerClass(
             this.slider.accessible_name = _('Studio Display Brightness Slider');
 
             setInterval(() => {
-                this._shouldIHide();
+                this._update();
             }, 15000);
 
-            this._shouldIHide();
+            this._update();
         }
 
-        _shouldIHide() {
-            const brightness = this._brightness()
-            this.visible = (brightness != null)
-            const percent = Math.floor(this.slider.value * 100);
-            if (percent != brightness) this.slider.value = brightness / 100
-        }
-
-        _brightness() {
-            let [res, out] = GLib.spawn_command_line_sync('asdbctl get');
-            out = out.toString().trim().split(" ");
-            if (out[0] != "brightness") return null
-            return out[1]
+        _update() {
+            let argv = ["asdbctl", "get"]
+            execCommunicate(argv).then(result => {
+                let out = result.toString().trim().split(" ");
+                if (out[0] != "brightness") {
+                    this.visible = false
+                } else {
+                    this.visible = true
+                    this.slider.value = out[1] / 100
+                }
+            
+            })
+            
         }
     
         _onSliderChanged() {
@@ -106,5 +109,33 @@ export default class QuickSettingsDisplayBrightness extends Extension {
         this._indicator.quickSettingsItems.forEach(item => item.destroy());
         this._indicator.destroy();
     }
+}
+
+// https://www.reddit.com/r/gnome/comments/gqvgeu/comment/frwgd5y/
+function execCommunicate(argv) {
+    let flags = (Gio.SubprocessFlags.STDOUT_PIPE |
+                 Gio.SubprocessFlags.STDERR_PIPE);
+
+    let proc = Gio.Subprocess.new(argv, flags);
+
+    return new Promise((resolve, reject) => {
+        proc.communicate_utf8_async(null, null, (proc, res) => {
+            try {
+                let [, stdout, stderr] = proc.communicate_utf8_finish(res);
+                let status = proc.get_exit_status();
+
+                if (status !== 0) {
+                    throw new Gio.IOErrorEnum({
+                        code: Gio.io_error_from_errno(status),
+                        message: stderr ? stderr.trim() : GLib.strerror(status)
+                    });
+                }
+
+                resolve(stdout.trim());
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
 }
 
