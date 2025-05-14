@@ -46,15 +46,15 @@ const BrightnessSlider = GObject.registerClass(
 
         _update() {
             let argv = ["asdbctl", "get"]
+            console.log("asdbctl-slider update")
             execCommunicate(argv).then(result => {
+                console.log(result)
                 let out = result.toString().trim().split(" ");
-                if (out[0] != "brightness") {
-                    this.visible = false
-                } else {
-                    this.visible = true
                     this.slider.value = out[1] / 100
-                }
+                    this.visible = true
             
+            }).catch(e => {
+                this.visible = false
             })
             
         }
